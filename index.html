@@ -2,196 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Knob Simulation | CIT CSE</title>
+    <title>Smart Stove Knob | Simulation Dashboard</title>
     <style>
-        :root {
-            --danger: #ef4444;
-            --safe: #22c55e;
-            --primary: #2563eb;
-            --bg: #0f172a;
-        }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .simulator-container {
-            background: #1e293b;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            width: 90%;
-            max-width: 800px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-
-        /* Status Section */
-        .status-panel {
-            text-align: center;
-            border-right: 1px solid #334155;
-            padding-right: 2rem;
-        }
-
-        .knob-visual {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            border: 8px solid #475569;
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            transition: all 0.5s ease;
-            position: relative;
-        }
-
-        .knob-visual::after {
-            content: '';
-            position: absolute;
-            top: 10px;
-            width: 4px;
-            height: 40px;
-            background: white;
-            transition: transform 0.5s;
-        }
-
-        .status-on { border-color: var(--safe); color: var(--safe); box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
-        .status-off { border-color: var(--danger); color: var(--danger); }
-        .status-off::after { transform: rotate(-90deg); }
-
-        /* Controls Section */
-        .control-panel h3 { color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; }
-        
-        .slider-group { margin-bottom: 1.5rem; }
-        input[type=range] { width: 100%; cursor: pointer; }
-
-        .bt-button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            width: 100%;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 1rem;
-        }
-
-        .alert-box {
-            grid-column: span 2;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            display: none;
-        }
+        :root { --primary: #3b82f6; --danger: #ef4444; --success: #10b981; --dark: #0f172a; }
+        body { font-family: 'Inter', sans-serif; background: var(--dark); color: #f8fafc; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; max-width: 1200px; margin: auto; }
+        .panel { background: #1e293b; padding: 25px; border-radius: 16px; border: 1px solid #334155; }
+        .knob-container { text-align: center; padding: 40px; }
+        .knob { width: 180px; height: 180px; border-radius: 50%; border: 10px solid #475569; margin: auto; 
+                display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+        .knob::before { content: ''; position: absolute; top: 15px; width: 6px; height: 50px; background: white; border-radius: 3px; }
+        .on { border-color: var(--success); color: var(--success); box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); }
+        .off { border-color: var(--danger); color: var(--danger); transform: rotate(-90deg); }
+        .slider-box { margin-bottom: 25px; }
+        input[type=range] { width: 100%; height: 8px; border-radius: 5px; appearance: none; background: #334155; outline: none; }
+        .log-screen { background: #000; color: #10b981; font-family: monospace; padding: 15px; height: 200px; overflow-y: auto; border-radius: 8px; font-size: 0.85rem; }
+        .badge { background: var(--primary); padding: 4px 12px; border-radius: 99px; font-size: 0.7rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-<div class="simulator-container">
-    <div class="status-panel">
-        <h2>Smart Knob V1</h2>
-        <div id="knob" class="knob-visual status-on">ON</div>
-        <p id="bt-status" style="color: #64748b;">Bluetooth: Disconnected</p>
-        <div style="text-align: left; background: #0f172a; padding: 10px; border-radius: 8px;">
-            <small>Live Logs:</small>
-            <div id="logs" style="font-family: monospace; font-size: 0.8rem; color: #10b981;">> System Initialized...</div>
+<div style="text-align:center; margin-bottom: 30px;">
+    <h1>Smart Auto-Off Stove Knob</h1>
+    <span class="badge">CIT Department of CSE</span>
+</div>
+
+<div class="grid">
+    <div class="panel">
+        <h3>Device Status</h3>
+        <div class="knob-container">
+            <div id="knob" class="knob on">STOVE ON</div>
+        </div>
+        <div id="bt-box" style="text-align: center; color: #94a3b8;">
+            <p>HC-05 Bluetooth: <span id="bt-stat">Scanning...</span></p>
+            <button onclick="toggleBT()" style="cursor:pointer; background: var(--primary); color:white; border:none; padding:8px 20px; border-radius:5px;">Connect App</button>
         </div>
     </div>
 
-    <div class="control-panel">
-        <h3>Sensor Simulation</h3>
+    <div class="panel">
+        <h3>Sensor Simulation (Arduino Inputs)</h3>
         
-        <div class="slider-group">
-            <label>Gas Level (PPM): <span id="gas-val">150</span></label>
-            <input type="range" id="gas-slider" min="0" max="1000" value="150">
+        <div class="slider-box">
+            <label>MQ-2 Gas Sensor: <b id="g-val">120</b> PPM</label>
+            <input type="range" id="gas" min="0" max="1000" value="120">
         </div>
 
-        <div class="slider-group">
-            <label>Temperature (°C): <span id="temp-val">45</span></label>
-            <input type="range" id="temp-slider" min="20" max="200" value="45">
+        <div class="slider-box">
+            <label>LM35 Temp Sensor: <b id="t-val">30</b> °C</label>
+            <input type="range" id="temp" min="20" max="150" value="30">
         </div>
 
-        <div class="slider-group">
-            <label>Timer (Minutes): <span id="timer-val">30</span></label>
-            <input type="range" id="timer-slider" min="0" max="120" value="30">
-        </div>
-
-        <button class="bt-button" onclick="toggleBT()">Connect Bluetooth</button>
+        <h3>System Logs</h3>
+        <div id="logs" class="log-screen">> Initializing Arduino Nano...<br>> Sensors 24/7 Monitoring Active...</div>
     </div>
-
-    <div id="alert" class="alert-box"></div>
 </div>
 
 <script>
-    const gasSlider = document.getElementById('gas-slider');
-    const tempSlider = document.getElementById('temp-slider');
+    const gS = document.getElementById('gas');
+    const tS = document.getElementById('temp');
     const knob = document.getElementById('knob');
-    const alertBox = document.getElementById('alert');
-    const logs = document.getElementById('logs');
+    const logBox = document.getElementById('logs');
+    let active = true;
+    let bt = false;
 
-    let isConnected = false;
-    let systemActive = true;
-
-    function updateLogs(msg) {
-        logs.innerHTML = `> ${msg}<br>` + logs.innerHTML;
+    function addLog(msg) {
+        logBox.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + logBox.innerHTML;
     }
 
     function toggleBT() {
-        isConnected = !isConnected;
-        document.getElementById('bt-status').innerText = isConnected ? "Bluetooth: Connected ✅" : "Bluetooth: Disconnected";
-        updateLogs(isConnected ? "BT Paired with Smartphone" : "BT Connection Lost");
+        bt = !bt;
+        document.getElementById('bt-stat').innerText = bt ? "CONNECTED ✅" : "DISCONNECTED";
+        addLog(bt ? "Mobile App Linked via Bluetooth" : "Bluetooth Connection Lost");
     }
 
-    function checkLogic() {
-        const gas = parseInt(gasSlider.value);
-        const temp = parseInt(tempSlider.value);
-        
-        document.getElementById('gas-val').innerText = gas;
-        document.getElementById('temp-val').innerText = temp;
+    function update() {
+        const gas = parseInt(gS.value);
+        const temp = parseInt(tS.value);
+        document.getElementById('g-val').innerText = gas;
+        document.getElementById('t-val').innerText = temp;
 
-        // EMERGENCY LOGIC
-        if (gas > 600 || temp > 120) {
-            systemActive = false;
-            knob.className = "knob-visual status-off";
-            knob.innerText = "OFF";
-            alertBox.style.display = "block";
-            alertBox.style.backgroundColor = "#ef4444";
-            alertBox.innerText = gas > 600 ? "CRITICAL GAS LEAK DETECTED! AUTO-SHUTOFF ACTIVATED." : "OVERHEATING DETECTED! STOVE KILLED.";
-            
-            if(isConnected) {
-                updateLogs("PUSH NOTIFICATION SENT TO PHONE!");
-            }
-        } else {
-            // Manual Reset Simulation
-            if (!systemActive && gas < 200 && temp < 60) {
-                systemActive = true;
-                knob.className = "knob-visual status-on";
-                knob.innerText = "ON";
-                alertBox.style.display = "none";
-                updateLogs("System Reset: Safe levels restored.");
-            }
+        // LOGIC FROM PPT: Gas > 400 OR Temp > 80 [cite: 35]
+        if (active && (gas > 400 || temp > 80)) {
+            active = false;
+            knob.classList.replace('on', 'off');
+            knob.innerText = "AUTO-OFF";
+            addLog("<span style='color:red'>!! HAZARD DETECTED !!</span>");
+            addLog("Command: Rotating Servo Motor to 90°...");
+            addLog("Buzzer: Emitting 85dB alert...");
+            if(bt) addLog("App: Push Notification Sent to User");
+        } else if (!active && gas < 200 && temp < 50) {
+            active = true;
+            knob.classList.replace('off', 'on');
+            knob.innerText = "STOVE ON";
+            addLog("System Status: Normal. Manual Reset Allowed.");
         }
     }
 
-    gasSlider.oninput = checkLogic;
-    tempSlider.oninput = checkLogic;
-    document.getElementById('timer-slider').oninput = function() {
-        document.getElementById('timer-val').innerText = this.value;
-    };
+    gS.oninput = update;
+    tS.oninput = update;
 </script>
-
 </body>
 </html>
