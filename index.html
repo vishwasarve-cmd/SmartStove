@@ -1,792 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Auto-Off Stove Knob · Simulator</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0b0e14;
-    --panel: #111620;
-    --panel2: #161c28;
-    --border: rgba(255,255,255,0.07);
-    --green: #00e5a0;
-    --green-dim: rgba(0,229,160,0.12);
-    --red: #ff3b5c;
-    --red-dim: rgba(255,59,92,0.12);
-    --amber: #ffb84d;
-    --amber-dim: rgba(255,184,77,0.12);
-    --blue: #4d9fff;
-    --text: #e8eaf0;
-    --muted: #5a6070;
-    --font-mono: 'Space Mono', monospace;
-    --font-sans: 'DM Sans', sans-serif;
-    --radius: 16px;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Safety Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a;
+            --card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #00f2fe;
+            --danger: #ff0055;
+            --success: #00ff9d;
+            --warning: #ffb800;
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
-  body {
-    font-family: var(--font-sans);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            background-image: radial-gradient(circle at 50% 50%, #111827 0%, #05070a 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-  /* GRID */
-  .shell {
-    display: grid;
-    grid-template-columns: 280px 1fr 300px;
-    grid-template-rows: 64px 1fr;
-    min-height: 100vh;
-    gap: 0;
-  }
+        /* LAYOUT SHELL */
+        .app-shell {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            height: 100vh;
+            gap: 15px;
+            padding: 15px;
+        }
 
-  /* TOPBAR */
-  .topbar {
-    grid-column: 1 / -1;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 28px;
-    gap: 20px;
-  }
-  .topbar-logo { font-family: var(--font-mono); font-size: 14px; color: var(--green); letter-spacing: 0.04em; }
-  .topbar-sub { font-size: 12px; color: var(--muted); }
-  .topbar-sep { flex: 1; }
-  .topbar-team { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 1100px) {
+            .app-shell { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+            .side-panel { height: auto !important; order: 2; }
+            .center-stage { order: 1; min-height: 80vh; }
+        }
 
-  /* LEFT PANEL */
-  .left-panel {
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    padding: 24px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    overflow-y: auto;
-  }
+        /* HEADER REMOVAL / CLEANUP */
+        .glass-panel {
+            background: var(--card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-  .section-label {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
+        /* CENTER STIMULATOR DESIGN */
+        .center-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
 
-  /* SENSOR CARDS */
-  .sensor-card {
-    background: var(--panel2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    transition: border-color 0.3s;
-  }
-  .sensor-card.warn { border-color: var(--amber); background: rgba(255,184,77,0.05); }
-  .sensor-card.danger { border-color: var(--red); background: rgba(255,59,92,0.06); animation: danger-pulse 0.8s infinite alternate; }
-  @keyframes danger-pulse { from{border-color: var(--red)} to{border-color: rgba(255,59,92,0.3)} }
+        .visualizer-ring {
+            width: 320px; height: 320px;
+            background: #0f172a;
+            border-radius: 50%;
+            border: 12px solid #1e293b;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
 
-  .sensor-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .sensor-name { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
-  .sensor-badge { font-size: 10px; padding: 2px 8px; border-radius: 100px; font-family: var(--font-mono); background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,229,160,0.2); }
-  .sensor-badge.warn { background: var(--amber-dim); color: var(--amber); border-color: rgba(255,184,77,0.3); }
-  .sensor-badge.danger { background: var(--red-dim); color: var(--red); border-color: rgba(255,59,92,0.3); }
+        .knob-pointer {
+            width: 10px; height: 110px;
+            background: linear-gradient(to top, var(--accent), #fff);
+            border-radius: 20px;
+            position: absolute;
+            top: 40px;
+            transform-origin: bottom center;
+            box-shadow: 0 0 20px var(--accent);
+        }
 
-  .sensor-val { font-size: 36px; font-weight: 700; font-family: var(--font-mono); line-height: 1; margin-bottom: 4px; }
-  .sensor-val.ok { color: var(--green); }
-  .sensor-val.warn { color: var(--amber); }
-  .sensor-val.danger { color: var(--red); }
-  .sensor-unit { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+        .knob-pointer.emergency {
+            background: linear-gradient(to top, var(--danger), #fff);
+            box-shadow: 0 0 30px var(--danger);
+            transform: rotate(-90deg) !important;
+        }
 
-  /* RANGE TRACK */
-  .track-wrap { position: relative; margin-bottom: 6px; }
-  input[type=range] {
-    width: 100%; height: 4px; appearance: none; background: transparent; cursor: pointer;
-    position: relative; z-index: 2;
-  }
-  input[type=range]::-webkit-slider-runnable-track {
-    height: 4px; border-radius: 4px; background: #1e2530;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    appearance: none; width: 16px; height: 16px; border-radius: 50%;
-    background: #fff; margin-top: -6px; cursor: pointer; transition: transform 0.15s;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
-  }
-  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        /* STOVE BURNER VISUALS */
+        .burner-grid {
+            display: flex; gap: 40px; margin-top: 50px;
+        }
 
-  .threshold-line {
-    position: absolute; top: 0; width: 2px; height: 4px; background: var(--red);
-    z-index: 3; pointer-events: none; margin-top: 8px;
-  }
-  .track-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+        .burner-unit {
+            width: 80px; height: 80px;
+            border: 3px solid #1e293b;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
 
-  /* SCENARIO BUTTONS */
-  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .sc-btn {
-    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px 8px; text-align: center; cursor: pointer; font-size: 11px;
-    color: var(--muted); font-family: var(--font-sans); transition: all 0.2s; line-height: 1.4;
-  }
-  .sc-btn:hover { border-color: var(--blue); color: var(--text); background: rgba(77,159,255,0.06); }
-  .sc-btn .sc-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+        .flame-icon {
+            font-size: 30px; filter: drop-shadow(0 0 10px #ff6b00);
+            opacity: 0; transform: scale(0.5);
+        }
 
-  /* MANUAL CONTROL */
-  .manual-btn {
-    width: 100%; padding: 12px; border-radius: 10px; cursor: pointer;
-    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
-    border: none; transition: all 0.2s; letter-spacing: 0.05em;
-  }
-  .btn-off { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,59,92,0.3); }
-  .btn-off:hover { background: rgba(255,59,92,0.2); }
-  .btn-reset { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,229,160,0.3); margin-top: 8px; }
-  .btn-reset:hover { background: rgba(0,229,160,0.2); }
+        .burner-unit.active .flame-icon {
+            opacity: 1; transform: scale(1);
+            animation: flicker 0.1s infinite alternate;
+        }
 
-  /* CENTER */
-  .center { background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; padding: 40px; position: relative; overflow: hidden; }
+        @keyframes flicker {
+            from { transform: scale(1) translateY(0); }
+            to { transform: scale(1.1) translateY(-5px); }
+        }
 
-  /* AMBIENT GLOW */
-  .ambient {
-    position: absolute; width: 500px; height: 500px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,229,160,0.04) 0%, transparent 70%);
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    transition: background 0.6s;
-    pointer-events: none;
-  }
-  .ambient.danger { background: radial-gradient(circle, rgba(255,59,92,0.08) 0%, transparent 70%); }
-  .ambient.warn { background: radial-gradient(circle, rgba(255,184,77,0.06) 0%, transparent 70%); }
+        /* SENSOR SLIDERS */
+        .slider-box {
+            background: rgba(255,255,255,0.02);
+            padding: 20px;
+            border-radius: 18px;
+            margin-bottom: 15px;
+        }
 
-  /* STOVE VISUAL */
-  .stove-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 24px; z-index: 1; }
+        .slider-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #888; }
+        .val-big { font-family: var(--font-mono); font-size: 24px; color: var(--accent); font-weight: 700; }
 
-  /* KNOB */
-  .knob-stage { position: relative; width: 200px; height: 200px; }
-  .knob-ring {
-    position: absolute; inset: 0; border-radius: 50%;
-    background: conic-gradient(#1a2030 0%, #222a38 50%, #1a2030 100%);
-    border: 2px solid rgba(255,255,255,0.06);
-    box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
-  }
-  .knob-inner {
-    position: absolute; inset: 20px; border-radius: 50%;
-    background: #0e1320;
-    border: 1px solid rgba(255,255,255,0.04);
-    display: flex; align-items: center; justify-content: center; flex-direction: column;
-    gap: 4px;
-  }
-  .knob-label { font-size: 11px; font-family: var(--font-mono); color: var(--muted); }
-  .knob-state { font-size: 18px; font-weight: 700; font-family: var(--font-mono); color: var(--green); transition: color 0.4s; }
-  .knob-state.danger { color: var(--red); }
+        input[type=range] {
+            width: 100%; height: 6px; appearance: none; background: #222; border-radius: 50px;
+        }
 
-  /* SERVO INDICATOR */
-  .servo-arm {
-    position: absolute; top: 50%; left: 50%; width: 6px; height: 70px;
-    background: linear-gradient(to top, #4d9fff, #7ec8ff);
-    border-radius: 6px; margin-left: -3px; margin-top: -65px;
-    transform-origin: bottom center;
-    transform: rotate(0deg);
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 14px rgba(77,159,255,0.6);
-  }
-  .servo-arm.off { transform: rotate(-90deg); background: linear-gradient(to top, var(--red), #ff7090); box-shadow: 0 0 14px rgba(255,59,92,0.6); }
-  .servo-center { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border-radius: 50%; background: #1a2030; border: 2px solid rgba(255,255,255,0.1); transform: translate(-50%,-50%); z-index: 2; }
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none; width: 20px; height: 200px; /* logic handle */
+            width: 22px; height: 22px; border-radius: 50%; background: #fff; cursor: pointer;
+            box-shadow: 0 0 15px var(--accent);
+        }
 
-  /* KNOB MARKINGS */
-  .knob-marks { position: absolute; inset: 0; border-radius: 50%; }
-  .mark {
-    position: absolute; top: 6px; left: 50%; width: 2px; height: 10px;
-    background: rgba(255,255,255,0.1); border-radius: 2px;
-    transform-origin: 1px 94px;
-  }
-  .mark.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        /* SYSTEM LOGS */
+        .log-screen {
+            background: #000;
+            border-radius: 12px;
+            padding: 15px;
+            flex-grow: 1;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--success);
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
 
-  /* STOVE BURNER */
-  .burner-wrap { display: flex; gap: 32px; }
-  .burner {
-    width: 70px; height: 70px; border-radius: 50%;
-    border: 2px solid #1e2530;
-    display: flex; align-items: center; justify-content: center;
-    position: relative; transition: all 0.4s;
-  }
-  .burner::before {
-    content: ''; position: absolute; inset: 8px; border-radius: 50%;
-    border: 2px dashed #1e2530; transition: all 0.4s;
-  }
-  .burner.active::before { border-color: rgba(255,150,50,0.3); }
-  .flame {
-    font-size: 22px; opacity: 0.15; transition: all 0.4s; transform: scale(0.6);
-  }
-  .burner.active .flame { opacity: 1; transform: scale(1); animation: flicker 0.5s infinite alternate; }
-  .burner.main { width: 90px; height: 90px; }
-  .burner.main .flame { font-size: 30px; }
-  @keyframes flicker { from{transform:scale(1) rotate(-3deg)} to{transform:scale(1.1) rotate(3deg)} }
+        /* STATUS BADGE */
+        .status-badge {
+            margin-top: 30px;
+            padding: 10px 30px;
+            border-radius: 100px;
+            border: 1px solid var(--success);
+            color: var(--success);
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: rgba(0, 255, 157, 0.05);
+        }
 
-  /* STATUS BAR */
-  .status-bar {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--panel2); border: 1px solid var(--border);
-    border-radius: 100px; padding: 10px 20px;
-    font-family: var(--font-mono); font-size: 12px; transition: all 0.4s;
-  }
-  .status-bar.danger { border-color: var(--red); background: rgba(255,59,92,0.08); }
-  .status-bar.warn { border-color: var(--amber); background: rgba(255,184,77,0.05); }
-  .status-icon { font-size: 14px; }
-  .status-text { color: var(--text); }
-  .status-sub { color: var(--muted); font-size: 10px; }
+        .status-badge.hazard {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: rgba(255, 0, 85, 0.1);
+            animation: pulse-danger 1s infinite alternate;
+        }
 
-  /* ALERT BANNER */
-  .alert-banner {
-    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-    background: rgba(255,59,92,0.12); border: 1px solid var(--red);
-    border-radius: 10px; padding: 10px 20px; z-index: 10;
-    font-family: var(--font-mono); font-size: 12px; color: var(--red);
-    display: flex; align-items: center; gap: 8px;
-    opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
-  }
-  .alert-banner.show { opacity: 1; }
-  .alert-blink { animation: ablink 0.6s infinite; }
-  @keyframes ablink { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes pulse-danger {
+            from { box-shadow: 0 0 0px var(--danger); }
+            to { box-shadow: 0 0 20px var(--danger); }
+        }
 
-  /* RIGHT PANEL */
-  .right-panel {
-    background: var(--panel); border-left: 1px solid var(--border);
-    padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
-  }
-
-  /* MINI METRIC */
-  .metric { background: var(--panel2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
-  .metric-label { font-size: 10px; color: var(--muted); font-family: var(--font-mono); margin-bottom: 4px; }
-  .metric-val { font-size: 20px; font-weight: 600; font-family: var(--font-mono); }
-  .metric-val.green { color: var(--green); }
-  .metric-val.red { color: var(--red); }
-  .metric-val.amber { color: var(--amber); }
-  .metric-val.blue { color: var(--blue); }
-  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-  /* TERMINAL */
-  .terminal {
-    flex: 1; background: #060810; border-radius: 10px;
-    border: 1px solid var(--border); padding: 12px; min-height: 0;
-    font-family: var(--font-mono); font-size: 11px; color: var(--green);
-    overflow-y: auto; line-height: 1.8;
-  }
-  .t-line { margin: 0; }
-  .t-line.err { color: var(--red); }
-  .t-line.warn { color: var(--amber); }
-  .t-line.info { color: var(--blue); }
-  .t-line.muted { color: var(--muted); }
-  .t-cursor { display: inline-block; width: 7px; height: 14px; background: var(--green); vertical-align: middle; animation: blink 1s infinite; margin-left: 2px; }
-  @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
-
-  /* TIMELINE */
-  .timeline { display: flex; flex-direction: column; gap: 6px; }
-  .tl-item { display: flex; align-items: flex-start; gap: 10px; font-size: 11px; opacity: 0.9; }
-  .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; margin-top: 3px; }
-  .tl-dot.green { background: var(--green); }
-  .tl-dot.red { background: var(--red); }
-  .tl-dot.amber { background: var(--amber); }
-  .tl-time { color: var(--muted); font-family: var(--font-mono); flex-shrink: 0; font-size: 10px; }
-  .tl-msg { color: var(--text); line-height: 1.4; }
-
-  /* BT NOTIFICATION */
-  .notif {
-    background: var(--panel2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 14px; display: flex; align-items: center; gap: 12px;
-    font-size: 12px; transition: all 0.3s; opacity: 0;
-  }
-  .notif.show { opacity: 1; border-color: rgba(77,159,255,0.4); background: rgba(77,159,255,0.06); }
-  .notif.danger.show { border-color: rgba(255,59,92,0.4); background: rgba(255,59,92,0.06); }
-  .notif-icon { font-size: 20px; }
-  .notif-title { font-weight: 600; font-size: 12px; }
-  .notif-body { font-size: 11px; color: var(--muted); }
-  .notif-time { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-left: auto; }
-
-  /* SYSTEM STATUS FLOW */
-  .flow { display: flex; align-items: center; gap: 0; font-size: 10px; font-family: var(--font-mono); }
-  .flow-node {
-    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 6px 10px; color: var(--muted); text-align: center; transition: all 0.3s; flex: 1;
-  }
-  .flow-node.active { border-color: var(--green); color: var(--green); background: var(--green-dim); }
-  .flow-node.triggered { border-color: var(--red); color: var(--red); background: var(--red-dim); animation: danger-pulse 0.8s infinite alternate; }
-  .flow-arrow { color: var(--muted); padding: 0 2px; font-size: 9px; }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1e2530; border-radius: 4px; }
-
-  /* PROGRESS BAR */
-  .pbar-wrap { height: 4px; background: #1a2030; border-radius: 4px; overflow: hidden; margin-top: 4px; }
-  .pbar-fill { height: 100%; border-radius: 4px; transition: width 0.3s, background 0.3s; }
-</style>
+    </style>
 </head>
 <body>
-<div class="shell">
 
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="status-dot" id="sys-dot"></div>
-    <div class="topbar-logo">SMART-KNOB.OS v2.4</div>
-    <div class="topbar-sub">· Auto-Off Stove Safety System · Simulator</div>
-    <div class="topbar-sep"></div>
-    <div class="topbar-team">CIT CSE · Shyam · Sarvesh · Gokul · Sanjith</div>
-  </header>
-
-  <!-- LEFT PANEL -->
-  <aside class="left-panel">
-
-    <div>
-      <div class="section-label">MQ-2 Gas Sensor</div>
-      <div class="sensor-card" id="gas-card">
-        <div class="sensor-top">
-          <span class="sensor-name">LPG / PROPANE / METHANE</span>
-          <span class="sensor-badge" id="gas-badge">SAFE</span>
+<div class="app-shell">
+    
+    <aside class="glass-panel side-panel">
+        <h3 style="margin-bottom: 25px; letter-spacing: 1px; color: var(--accent)">SENSORS</h3>
+        
+        <div class="slider-box">
+            <div class="slider-header"><span>GAS (PPM)</span> <span id="gas-badge" style="color:var(--success)">SAFE</span></div>
+            <div class="val-big" id="gas-val">120</div>
+            <input type="range" id="gas-in" min="0" max="1000" value="120">
         </div>
-        <div class="sensor-val ok" id="gas-val">120</div>
-        <div class="sensor-unit">PPM concentration</div>
-        <div class="track-wrap">
-          <input type="range" id="gas-slider" min="0" max="1000" value="120" step="5">
+
+        <div class="slider-box">
+            <div class="slider-header"><span>TEMP (°C)</span> <span id="temp-badge" style="color:var(--success)">SAFE</span></div>
+            <div class="val-big" id="temp-val">28</div>
+            <input type="range" id="temp-in" min="20" max="150" value="28">
         </div>
-        <div class="pbar-wrap"><div class="pbar-fill" id="gas-bar" style="width:12%; background:var(--green)"></div></div>
-        <div class="track-labels"><span>0</span><span>WARN 400</span><span>1000</span></div>
-      </div>
-    </div>
 
-    <div>
-      <div class="section-label">LM35 Temperature Sensor</div>
-      <div class="sensor-card" id="temp-card">
-        <div class="sensor-top">
-          <span class="sensor-name">SURFACE TEMPERATURE</span>
-          <span class="sensor-badge" id="temp-badge">SAFE</span>
+        <div style="margin-top: auto;">
+            <p style="font-size: 11px; color: #555;">PRESET SCENARIOS</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <button onclick="setScenario(650, 30)" style="background: var(--card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; cursor: pointer;">Gas Leak</button>
+                <button onclick="setScenario(80, 110)" style="background: var(--card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; cursor: pointer;">Overheat</button>
+                <button onclick="setScenario(40, 25)" style="background: var(--card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; cursor: pointer;">Safe Reset</button>
+            </div>
         </div>
-        <div class="sensor-val ok" id="temp-val">28</div>
-        <div class="sensor-unit">°C surface reading</div>
-        <div class="track-wrap">
-          <input type="range" id="temp-slider" min="20" max="150" value="28" step="1">
+    </aside>
+
+    <main class="center-stage">
+        <div class="visualizer-ring" id="knob-body">
+            <div class="knob-pointer" id="pointer"></div>
+            <div style="font-weight: 900; font-size: 2rem; color: #fff;" id="knob-text">ON</div>
         </div>
-        <div class="pbar-wrap"><div class="pbar-fill" id="temp-bar" style="width:6%; background:var(--green)"></div></div>
-        <div class="track-labels"><span>20°C</span><span>WARN 80°C</span><span>150°C</span></div>
-      </div>
-    </div>
 
-    <div>
-      <div class="section-label">Scenario Presets</div>
-      <div class="scenario-grid">
-        <button class="sc-btn" onclick="applyScenario('normal')"><span class="sc-icon">🍳</span>Normal cooking</button>
-        <button class="sc-btn" onclick="applyScenario('elderly')"><span class="sc-icon">👵</span>Forgot stove on</button>
-        <button class="sc-btn" onclick="applyScenario('gasleak')"><span class="sc-icon">💨</span>Gas leak</button>
-        <button class="sc-btn" onclick="applyScenario('overheat')"><span class="sc-icon">🌡️</span>Overheating</button>
-        <button class="sc-btn" onclick="applyScenario('both')"><span class="sc-icon">🚨</span>Both hazards</button>
-        <button class="sc-btn" onclick="applyScenario('safe')"><span class="sc-icon">✅</span>Safe state</button>
-      </div>
-    </div>
+        <div class="status-badge" id="master-status">SYSTEM SECURE</div>
 
-    <div>
-      <div class="section-label">Manual Override</div>
-      <button class="manual-btn btn-off" onclick="manualOff()">⬛ FORCE SHUTDOWN</button>
-      <button class="manual-btn btn-reset" onclick="manualReset()">↺ RESET SYSTEM</button>
-    </div>
-
-  </aside>
-
-  <!-- CENTER -->
-  <main class="center">
-    <div class="ambient" id="ambient"></div>
-
-    <div class="alert-banner" id="alert-banner">
-      <span class="alert-blink">⚠</span>
-      <span id="alert-msg">HAZARD DETECTED — EMERGENCY SHUTDOWN</span>
-    </div>
-
-    <!-- SYSTEM FLOW -->
-    <div class="flow" style="width:100%;max-width:520px;">
-      <div class="flow-node active" id="fn-monitor">MONITOR</div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node" id="fn-process">PROCESS</div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node" id="fn-assess">ASSESS</div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node" id="fn-alert">ALERT</div>
-      <div class="flow-arrow">→</div>
-      <div class="flow-node" id="fn-shutoff">SHUTOFF</div>
-    </div>
-
-    <!-- STOVE -->
-    <div class="stove-wrap">
-      <div class="knob-stage">
-        <div class="knob-ring"></div>
-        <div class="knob-marks" id="knob-marks"></div>
-        <div class="servo-arm" id="servo-arm"></div>
-        <div class="servo-center"></div>
-        <div class="knob-inner">
-          <div class="knob-label">SG90 SERVO</div>
-          <div class="knob-state" id="knob-state">ON</div>
-          <div class="knob-label" id="knob-pos">0°</div>
+        <div class="burner-grid">
+            <div class="burner-unit active" id="b1"><span class="flame-icon">🔥</span></div>
+            <div class="burner-unit active" id="b2"><span class="flame-icon">🔥</span></div>
+            <div class="burner-unit active" id="b3"><span class="flame-icon">🔥</span></div>
         </div>
-      </div>
+    </main>
 
-      <div class="burner-wrap">
-        <div class="burner" id="b1"><div class="flame">🔥</div></div>
-        <div class="burner main" id="b2"><div class="flame">🔥</div></div>
-        <div class="burner" id="b3"><div class="flame">🔥</div></div>
-      </div>
-    </div>
-
-    <!-- STATUS -->
-    <div class="status-bar" id="status-bar">
-      <span class="status-icon">🛡️</span>
-      <div>
-        <div class="status-text" id="status-text">SYSTEM SECURE — All sensors nominal</div>
-        <div class="status-sub" id="status-sub">Arduino Nano · HC-05 BT connected · Monitoring 24/7</div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- RIGHT PANEL -->
-  <aside class="right-panel">
-
-    <div class="section-label">System Metrics</div>
-    <div class="metrics-grid">
-      <div class="metric"><div class="metric-label">RESPONSE TIME</div><div class="metric-val blue" id="m-latency">&lt;1.2s</div></div>
-      <div class="metric"><div class="metric-label">SHUTDOWN COUNT</div><div class="metric-val amber" id="m-shutdowns">0</div></div>
-      <div class="metric"><div class="metric-label">UPTIME</div><div class="metric-val green" id="m-uptime">0s</div></div>
-      <div class="metric"><div class="metric-label">SERVO ANGLE</div><div class="metric-val" id="m-angle" style="color:var(--blue)">0°</div></div>
-    </div>
-
-    <div>
-      <div class="section-label">BT Mobile Alert</div>
-      <div class="notif" id="notif">
-        <div class="notif-icon">📱</div>
-        <div>
-          <div class="notif-title" id="notif-title">Smart Stove App</div>
-          <div class="notif-body" id="notif-body">System is secure</div>
+    <aside class="glass-panel side-panel">
+        <h3 style="margin-bottom: 25px; letter-spacing: 1px; color: var(--accent)">LOGS</h3>
+        <div class="log-screen" id="log-console">
+            > Initializing IoT Kernel...<br>
+            > Hardware Handshake: OK<br>
+            > Monitoring 24/7...
         </div>
-        <div class="notif-time" id="notif-time">--:--</div>
-      </div>
-    </div>
-
-    <div>
-      <div class="section-label">Live Telemetry</div>
-      <div class="terminal" id="terminal">
-        <p class="t-line muted">> Boot: KNOB.OS v2.4</p>
-        <p class="t-line muted">> MQ-2 Sensor......... OK</p>
-        <p class="t-line muted">> LM35 Sensor......... OK</p>
-        <p class="t-line muted">> HC-05 BT Link....... ESTAB</p>
-        <p class="t-line muted">> SG90 Servo.......... READY</p>
-        <p class="t-line">> System armed. Monitoring...<span class="t-cursor"></span></p>
-      </div>
-    </div>
-
-    <div>
-      <div class="section-label">Event Log</div>
-      <div class="timeline" id="timeline">
-        <div class="tl-item">
-          <div class="tl-dot green"></div>
-          <div class="tl-time" id="boot-time">--:--</div>
-          <div class="tl-msg">System initialized</div>
+        
+        <div style="margin-top: 20px;">
+            <div style="font-size: 12px; color: #888; margin-bottom: 5px;">ACTIVE CONNECTION</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:10px; height:10px; border-radius:50%; background:var(--success);"></div>
+                <span style="font-family: var(--font-mono); font-size: 12px;">HC-05_BT_MODULE</span>
+            </div>
         </div>
-      </div>
-    </div>
+    </aside>
 
-  </aside>
 </div>
 
 <script>
-// ─── STATE ─────────────────────────────────────
-const state = {
-  gas: 120, temp: 28,
-  isSafe: true, shutdownCount: 0,
-  startTime: Date.now(), shutdownTime: null
-};
+    const gasIn = document.getElementById('gas-in');
+    const tempIn = document.getElementById('temp-in');
+    const pointer = document.getElementById('pointer');
+    const knobText = document.getElementById('knob-text');
+    const masterStatus = document.getElementById('master-status');
+    const logConsole = document.getElementById('log-console');
 
-// ─── ELEMENTS ──────────────────────────────────
-const $ = id => document.getElementById(id);
-const gasSlider = $('gas-slider'), tempSlider = $('temp-slider');
+    let isSafe = true;
 
-// ─── KNOB MARKS ────────────────────────────────
-function buildMarks() {
-  const wrap = $('knob-marks');
-  for (let i = 0; i < 24; i++) {
-    const m = document.createElement('div');
-    m.className = 'mark';
-    m.style.transform = `rotate(${i * 15}deg)`;
-    if (i === 0) m.classList.add('active');
-    wrap.appendChild(m);
-  }
-}
-buildMarks();
-
-// ─── TIME HELPERS ──────────────────────────────
-function timeStr() { return new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-function uptime() {
-  const s = Math.floor((Date.now() - state.startTime) / 1000);
-  if (s < 60) return s + 's';
-  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
-  return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
-}
-
-// ─── TERMINAL LOG ──────────────────────────────
-function log(msg, type = '') {
-  const t = $('terminal');
-  const p = document.createElement('p');
-  p.className = 't-line ' + type;
-  p.textContent = `[${timeStr()}] ${msg}`;
-  t.insertBefore(p, t.firstChild);
-  while (t.children.length > 30) t.removeChild(t.lastChild);
-}
-
-// ─── TIMELINE ──────────────────────────────────
-function addEvent(msg, color = '') {
-  const tl = $('timeline');
-  const item = document.createElement('div');
-  item.className = 'tl-item';
-  item.innerHTML = `<div class="tl-dot ${color}"></div><div class="tl-time">${timeStr()}</div><div class="tl-msg">${msg}</div>`;
-  tl.insertBefore(item, tl.firstChild);
-  while (tl.children.length > 8) tl.removeChild(tl.lastChild);
-}
-
-// ─── SENSOR UPDATE ─────────────────────────────
-function updateSensor(id, val, max, threshold, unit, pct) {
-  const valEl = $(`${id}-val`);
-  const badge = $(`${id}-badge`);
-  const card  = $(`${id}-card`);
-  const bar   = $(`${id}-bar`);
-  const isWarn  = val > threshold * 0.8;
-  const isDanger = val > threshold;
-
-  valEl.textContent = val;
-  bar.style.width = Math.min(pct * 100, 100).toFixed(1) + '%';
-
-  if (isDanger) {
-    valEl.className = 'sensor-val danger';
-    badge.textContent = 'DANGER'; badge.className = 'sensor-badge danger';
-    card.className = 'sensor-card danger';
-    bar.style.background = 'var(--red)';
-  } else if (isWarn) {
-    valEl.className = 'sensor-val warn';
-    badge.textContent = 'WARNING'; badge.className = 'sensor-badge warn';
-    card.className = 'sensor-card warn';
-    bar.style.background = 'var(--amber)';
-  } else {
-    valEl.className = 'sensor-val ok';
-    badge.textContent = 'SAFE'; badge.className = 'sensor-badge';
-    card.className = 'sensor-card';
-    bar.style.background = 'var(--green)';
-  }
-}
-
-// ─── FLOW NODES ────────────────────────────────
-function setFlow(step) {
-  const nodes = ['fn-monitor','fn-process','fn-assess','fn-alert','fn-shutoff'];
-  nodes.forEach((id, i) => {
-    const el = $(id);
-    el.className = 'flow-node';
-    if (i < step) el.classList.add('active');
-    if (i === step - 1) el.classList.add('triggered');
-  });
-}
-
-// ─── MAIN LOGIC ────────────────────────────────
-let flowTimer = null;
-function triggerShutdown(reason) {
-  if (!state.isSafe) return;
-  state.isSafe = false;
-  state.shutdownCount++;
-  state.shutdownTime = Date.now();
-
-  // Servo + knob
-  $('servo-arm').classList.add('off');
-  $('knob-state').textContent = 'OFF';
-  $('knob-state').className = 'knob-state danger';
-  $('knob-pos').textContent = '−90°';
-  $('m-angle').textContent = '−90°';
-  $('m-shutdowns').textContent = state.shutdownCount;
-
-  // Burners off
-  ['b1','b2','b3'].forEach(id => $(id).classList.remove('active'));
-
-  // Status
-  $('status-bar').className = 'status-bar danger';
-  $('status-text').textContent = '⚠ CRITICAL — Emergency shutdown activated';
-  $('status-sub').textContent = 'Servo rotated −90° · Buzzer active · BT alert sent';
-
-  // Ambient
-  $('ambient').className = 'ambient danger';
-  $('sys-dot').style.background = 'var(--red)';
-  $('sys-dot').style.boxShadow = '0 0 8px var(--red)';
-
-  // Alert banner
-  $('alert-banner').classList.add('show');
-  $('alert-msg').textContent = reason.toUpperCase() + ' — EMERGENCY SHUTDOWN';
-
-  // Notification
-  const notif = $('notif');
-  notif.className = 'notif danger show';
-  $('notif-title').textContent = '⚠ SmartKnob Alert!';
-  $('notif-body').textContent = reason;
-  $('notif-time').textContent = timeStr();
-
-  // Logs
-  log('! HAZARD: ' + reason, 'err');
-  log('Activating SG90 servo — rotating to OFF', 'err');
-  log('Knob turned OFF in <2.4s', 'err');
-  log('BT alert sent to companion app', 'warn');
-  log('Buzzer activated', 'warn');
-  addEvent('🚨 SHUTDOWN: ' + reason, 'red');
-
-  // Animated flow
-  let step = 0;
-  clearInterval(flowTimer);
-  flowTimer = setInterval(() => {
-    step++;
-    setFlow(step);
-    if (step >= 5) clearInterval(flowTimer);
-  }, 400);
-
-  $('m-latency').textContent = (1.8 + Math.random() * 0.8).toFixed(1) + 's';
-}
-
-function clearHazard() {
-  state.isSafe = true;
-  $('servo-arm').classList.remove('off');
-  $('knob-state').textContent = 'ON';
-  $('knob-state').className = 'knob-state';
-  $('knob-pos').textContent = '0°';
-  $('m-angle').textContent = '0°';
-  ['b1','b2','b3'].forEach(id => $(id).classList.add('active'));
-  $('status-bar').className = 'status-bar';
-  $('status-text').textContent = '🛡️ SYSTEM SECURE — All sensors nominal';
-  $('status-sub').textContent = 'Arduino Nano · HC-05 BT connected · Monitoring 24/7';
-  $('ambient').className = 'ambient';
-  $('sys-dot').style.background = 'var(--green)';
-  $('sys-dot').style.boxShadow = '0 0 8px var(--green)';
-  $('alert-banner').classList.remove('show');
-  $('notif').className = 'notif show';
-  $('notif-title').textContent = 'SmartKnob App';
-  $('notif-body').textContent = '✅ Environment cleared. System reset.';
-  $('notif-time').textContent = timeStr();
-  setFlow(1);
-  log('Environment cleared — resuming monitoring');
-  addEvent('✅ System cleared & reset', 'green');
-  $('m-latency').textContent = '<1.2s';
-}
-
-function evaluate() {
-  const gas = +gasSlider.value;
-  const temp = +tempSlider.value;
-  state.gas = gas; state.temp = temp;
-
-  updateSensor('gas', gas, 1000, 400, 'PPM', gas/1000);
-  updateSensor('temp', temp, 150, 80, '°C', (temp-20)/130);
-
-  const gasHazard = gas > 400;
-  const tempHazard = temp > 80;
-  const gasWarn = gas > 320;
-  const tempWarn = temp > 64;
-
-  if ((gasHazard || tempHazard) && state.isSafe) {
-    const reason = gasHazard && tempHazard ? 'Gas leak + Overheating detected'
-                 : gasHazard ? `Propane/LPG: ${gas} PPM (>400)`
-                 : `Surface temp: ${temp}°C (>80°C)`;
-    triggerShutdown(reason);
-  } else if (!gasHazard && !tempHazard && !state.isSafe && gas < 200 && temp < 60) {
-    clearHazard();
-  }
-
-  if (state.isSafe) {
-    if (gasWarn || tempWarn) {
-      $('ambient').className = 'ambient warn';
-      $('status-bar').className = 'status-bar warn';
-      $('status-text').textContent = '⚡ CAUTION — Approaching threshold';
-      $('status-sub').textContent = gasWarn ? `Gas ${gas} PPM — threshold 400` : `Temp ${temp}°C — threshold 80°C`;
-    } else {
-      $('ambient').className = 'ambient';
-      $('status-bar').className = 'status-bar';
-      $('status-text').textContent = '🛡️ SYSTEM SECURE — All sensors nominal';
-      $('status-sub').textContent = 'Arduino Nano · HC-05 BT connected · Monitoring 24/7';
+    function addLog(msg, color) {
+        const span = color ? `<span style="color:${color}">` : '<span>';
+        logConsole.innerHTML = `${span}[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + logConsole.innerHTML;
     }
-    const burners = gas > 50 || temp > 40;
-    ['b1','b2','b3'].forEach(id => {
-      const el = $(id);
-      el.classList.toggle('active', burners);
-    });
-  }
-}
 
-// ─── SCENARIOS ─────────────────────────────────
-const scenarios = {
-  normal:   { gas: 80, temp: 45 },
-  elderly:  { gas: 150, temp: 105 },
-  gasleak:  { gas: 620, temp: 30 },
-  overheat: { gas: 90, temp: 110 },
-  both:     { gas: 550, temp: 120 },
-  safe:     { gas: 30, temp: 25 },
-};
+    function setScenario(g, t) {
+        gasIn.value = g;
+        tempIn.value = t;
+        updateLogic();
+    }
 
-function animateTo(slider, target, steps = 20) {
-  const start = +slider.value;
-  const delta = (target - start) / steps;
-  let i = 0;
-  const interval = setInterval(() => {
-    i++;
-    slider.value = Math.round(start + delta * i);
-    evaluate();
-    if (i >= steps) clearInterval(interval);
-  }, 40);
-}
+    function updateLogic() {
+        const gas = parseInt(gasIn.value);
+        const temp = parseInt(tempIn.value);
 
-function applyScenario(name) {
-  const s = scenarios[name];
-  if (!s) return;
-  log('Scenario loaded: ' + name, 'info');
-  addEvent('📋 Scenario: ' + name, '');
-  animateTo(gasSlider, s.gas);
-  animateTo(tempSlider, s.temp);
-}
+        document.getElementById('gas-val').innerText = gas;
+        document.getElementById('temp-val').innerText = temp;
 
-// ─── MANUAL ────────────────────────────────────
-function manualOff() {
-  if (!state.isSafe) return;
-  log('Manual shutdown triggered via app', 'warn');
-  addEvent('📱 Manual override — OFF', 'amber');
-  triggerShutdown('Manual emergency shutdown');
-}
+        // Visual Threshold Logic
+        const isGasDanger = gas > 400;
+        const isTempDanger = temp > 80;
 
-function manualReset() {
-  gasSlider.value = 30; tempSlider.value = 25;
-  evaluate();
-  log('System manually reset', 'info');
-}
+        // UI Feedback
+        document.getElementById('gas-badge').innerText = isGasDanger ? 'DANGER' : 'SAFE';
+        document.getElementById('gas-badge').style.color = isGasDanger ? 'var(--danger)' : 'var(--success)';
+        document.getElementById('temp-badge').innerText = isTempDanger ? 'DANGER' : 'SAFE';
+        document.getElementById('temp-badge').style.color = isTempDanger ? 'var(--danger)' : 'var(--success)';
 
-// ─── TICKERS ───────────────────────────────────
-setInterval(() => { $('m-uptime').textContent = uptime(); }, 1000);
-$('boot-time').textContent = timeStr();
-$('notif').classList.add('show');
+        if (isSafe && (isGasDanger || isTempDanger)) {
+            isSafe = false;
+            // SHUTDOWN ACTION
+            pointer.classList.add('emergency');
+            knobText.innerText = 'OFF';
+            knobText.style.color = 'var(--danger)';
+            masterStatus.innerText = 'EMERGENCY SHUTDOWN';
+            masterStatus.classList.add('hazard');
+            
+            // Turn off flames
+            document.querySelectorAll('.burner-unit').forEach(b => b.classList.remove('active'));
+            
+            addLog("HAZARD DETECTED: Shutting off stove", "var(--danger)");
+            addLog("Servo Motor Angle: 90°", "var(--accent)");
+            addLog("BT Alert sent to Phone", "var(--warning)");
+        } 
+        else if (!isSafe && gas < 200 && temp < 45) {
+            isSafe = true;
+            pointer.classList.remove('emergency');
+            knobText.innerText = 'ON';
+            knobText.style.color = '#fff';
+            masterStatus.innerText = 'SYSTEM SECURE';
+            masterStatus.classList.remove('hazard');
+            
+            document.querySelectorAll('.burner-unit').forEach(b => b.classList.add('active'));
+            addLog("Environment Safe. System Reset.", "var(--success)");
+        }
+    }
 
-gasSlider.oninput = evaluate;
-tempSlider.oninput = evaluate;
-
-// Init
-setFlow(1);
-evaluate();
-['b1','b2','b3'].forEach(id => $(id).classList.add('active'));
-
-// Idle telemetry
-setInterval(() => {
-  if (state.isSafe) {
-    const g = +gasSlider.value, t = +tempSlider.value;
-    log(`Sensor poll: Gas=${g}ppm Temp=${t}°C`, 'muted');
-  }
-}, 8000);
+    gasIn.oninput = updateLogic;
+    tempIn.oninput = updateLogic;
 </script>
+
 </body>
 </html>
 
