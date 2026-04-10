@@ -3,62 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Safety Simulator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <title>IoT Safety Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #05070a;
-            --card: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.08);
-            --accent: #00f2fe;
-            --danger: #ff0055;
-            --success: #00ff9d;
-            --warning: #ffb800;
-            --font-main: 'Outfit', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --bg: #030406;
+            --panel: rgba(18, 22, 30, 0.7);
+            --accent: #e2b714; /* Luxury Gold */
+            --danger: #ff2a6d; /* Neon Crimson */
+            --success: #05ffa1; /* Electric Green */
+            --border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Space Grotesk', sans-serif;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s ease; }
 
         body {
             font-family: var(--font-main);
             background: var(--bg);
-            background-image: radial-gradient(circle at 50% 50%, #111827 0%, #05070a 100%);
+            background-image: radial-gradient(circle at 50% 50%, #0d121d 0%, #030406 100%);
             color: #fff;
             min-height: 100vh;
             overflow-x: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* LAYOUT SHELL */
-        .app-shell {
+        /* RESPONSIVE GRID */
+        .dashboard {
             display: grid;
             grid-template-columns: 320px 1fr 320px;
+            width: 100vw;
             height: 100vh;
-            gap: 15px;
-            padding: 15px;
+            padding: 20px;
+            gap: 20px;
         }
 
-        /* MOBILE RESPONSIVENESS */
         @media (max-width: 1100px) {
-            .app-shell { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+            .dashboard { grid-template-columns: 1fr; height: auto; padding: 10px; }
             .side-panel { height: auto !important; order: 2; }
-            .center-stage { order: 1; min-height: 80vh; }
+            .center-view { order: 1; height: 80vh !important; }
         }
 
-        /* HEADER REMOVAL / CLEANUP */
-        .glass-panel {
-            background: var(--card);
-            backdrop-filter: blur(20px);
+        .side-panel {
+            background: var(--panel);
+            backdrop-filter: blur(25px);
             border: 1px solid var(--border);
-            border-radius: 24px;
+            border-radius: 30px;
             padding: 25px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            gap: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        /* CENTER STIMULATOR DESIGN */
-        .center-stage {
+        /* CENTER STAGE */
+        .center-view {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -66,177 +67,155 @@
             position: relative;
         }
 
-        .visualizer-ring {
-            width: 320px; height: 320px;
-            background: #0f172a;
+        .hardware-circle {
+            width: 340px; height: 340px;
+            background: linear-gradient(145deg, #0f131a, #05070a);
             border-radius: 50%;
-            border: 12px solid #1e293b;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.5);
+            border: 4px solid var(--border);
             display: flex; align-items: center; justify-content: center;
             position: relative;
+            box-shadow: 0 0 80px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,1);
         }
 
-        .knob-pointer {
-            width: 10px; height: 110px;
+        /* 3D KNOB EFFECT */
+        .knob-cap {
+            width: 260px; height: 260px;
+            background: #151a24;
+            border-radius: 50%;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.5), -5px -5px 15px rgba(255,255,255,0.02);
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .pointer-line {
+            width: 8px; height: 100px;
             background: linear-gradient(to top, var(--accent), #fff);
-            border-radius: 20px;
-            position: absolute;
-            top: 40px;
+            position: absolute; top: 30px;
+            border-radius: 10px;
             transform-origin: bottom center;
             box-shadow: 0 0 20px var(--accent);
         }
 
-        .knob-pointer.emergency {
+        .pointer-line.danger {
             background: linear-gradient(to top, var(--danger), #fff);
             box-shadow: 0 0 30px var(--danger);
             transform: rotate(-90deg) !important;
         }
 
-        /* STOVE BURNER VISUALS */
-        .burner-grid {
-            display: flex; gap: 40px; margin-top: 50px;
-        }
-
-        .burner-unit {
-            width: 80px; height: 80px;
-            border: 3px solid #1e293b;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            position: relative;
-        }
-
-        .flame-icon {
-            font-size: 30px; filter: drop-shadow(0 0 10px #ff6b00);
-            opacity: 0; transform: scale(0.5);
-        }
-
-        .burner-unit.active .flame-icon {
-            opacity: 1; transform: scale(1);
-            animation: flicker 0.1s infinite alternate;
-        }
-
-        @keyframes flicker {
-            from { transform: scale(1) translateY(0); }
-            to { transform: scale(1.1) translateY(-5px); }
-        }
-
-        /* SENSOR SLIDERS */
-        .slider-box {
-            background: rgba(255,255,255,0.02);
+        /* SLIDERS & CONTROLS */
+        .card-ui {
+            background: rgba(255,255,255,0.03);
             padding: 20px;
-            border-radius: 18px;
-            margin-bottom: 15px;
-        }
-
-        .slider-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #888; }
-        .val-big { font-family: var(--font-mono); font-size: 24px; color: var(--accent); font-weight: 700; }
-
-        input[type=range] {
-            width: 100%; height: 6px; appearance: none; background: #222; border-radius: 50px;
-        }
-
-        input[type=range]::-webkit-slider-thumb {
-            appearance: none; width: 20px; height: 200px; /* logic handle */
-            width: 22px; height: 22px; border-radius: 50%; background: #fff; cursor: pointer;
-            box-shadow: 0 0 15px var(--accent);
-        }
-
-        /* SYSTEM LOGS */
-        .log-screen {
-            background: #000;
-            border-radius: 12px;
-            padding: 15px;
-            flex-grow: 1;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            color: var(--success);
-            overflow-y: auto;
+            border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* STATUS BADGE */
-        .status-badge {
-            margin-top: 30px;
-            padding: 10px 30px;
-            border-radius: 100px;
-            border: 1px solid var(--success);
+        .label { font-size: 11px; letter-spacing: 2px; color: #666; font-weight: 700; margin-bottom: 10px; }
+        .val-display { font-size: 32px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+
+        input[type=range] {
+            width: 100%; height: 6px; appearance: none; background: #222; border-radius: 10px; margin-top: 15px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; cursor: pointer; box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* DYNAMIC BURNERS */
+        .burner-row { display: flex; gap: 30px; margin-top: 40px; }
+        .burner {
+            width: 60px; height: 60px; border-radius: 50%; border: 2px solid #1a1f2b;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .flame {
+            font-size: 24px; filter: drop-shadow(0 0 10px #ff7b00); opacity: 0; transform: scale(0.5);
+        }
+        .active .flame { opacity: 1; transform: scale(1.1); animation: burn 0.2s infinite alternate; }
+
+        @keyframes burn { from { transform: scale(1); } to { transform: scale(1.15) translateY(-3px); } }
+
+        /* TELEMETRY TERMINAL */
+        .terminal {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 15px;
+            flex-grow: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
             color: var(--success);
-            font-weight: 800;
-            letter-spacing: 2px;
-            background: rgba(0, 255, 157, 0.05);
+            overflow-y: auto;
+            line-height: 1.6;
         }
 
-        .status-badge.hazard {
-            border-color: var(--danger);
-            color: var(--danger);
-            background: rgba(255, 0, 85, 0.1);
-            animation: pulse-danger 1s infinite alternate;
+        .status-badge {
+            margin-top: 25px; padding: 10px 30px; border-radius: 50px;
+            font-weight: 700; letter-spacing: 2px; font-size: 12px;
+            border: 1px solid var(--success); color: var(--success);
         }
+        .status-badge.red { border-color: var(--danger); color: var(--danger); background: rgba(255,42,109,0.1); animation: blink 0.8s infinite alternate; }
 
-        @keyframes pulse-danger {
-            from { box-shadow: 0 0 0px var(--danger); }
-            to { box-shadow: 0 0 20px var(--danger); }
-        }
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.6; } }
 
     </style>
 </head>
 <body>
 
-<div class="app-shell">
+<div class="dashboard">
     
-    <aside class="glass-panel side-panel">
-        <h3 style="margin-bottom: 25px; letter-spacing: 1px; color: var(--accent)">SENSORS</h3>
-        
-        <div class="slider-box">
-            <div class="slider-header"><span>GAS (PPM)</span> <span id="gas-badge" style="color:var(--success)">SAFE</span></div>
-            <div class="val-big" id="gas-val">120</div>
-            <input type="range" id="gas-in" min="0" max="1000" value="120">
+    <aside class="side-panel">
+        <div class="card-ui">
+            <div class="label">MQ-2 GAS SENSOR</div>
+            <div class="val-display" id="g-num">120</div>
+            <input type="range" id="g-slider" min="0" max="1000" value="120">
+            <div style="font-size: 10px; color: #444; margin-top: 8px;">THRESHOLD: 400 PPM</div>
         </div>
 
-        <div class="slider-box">
-            <div class="slider-header"><span>TEMP (°C)</span> <span id="temp-badge" style="color:var(--success)">SAFE</span></div>
-            <div class="val-big" id="temp-val">28</div>
-            <input type="range" id="temp-in" min="20" max="150" value="28">
+        <div class="card-ui">
+            <div class="label">LM35 TEMPERATURE</div>
+            <div class="val-display" id="t-num">28</div>
+            <input type="range" id="t-slider" min="20" max="150" value="28">
+            <div style="font-size: 10px; color: #444; margin-top: 8px;">THRESHOLD: 80°C</div>
         </div>
 
         <div style="margin-top: auto;">
-            <p style="font-size: 11px; color: #555;">PRESET SCENARIOS</p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                <button onclick="setScenario(650, 30)" style="background: var(--card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; cursor: pointer;">Gas Leak</button>
-                <button onclick="setScenario(80, 110)" style="background: var(--card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; cursor: pointer;">Overheat</button>
-                <button onclick="setScenario(40, 25)" style="background: var(--card); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; cursor: pointer;">Safe Reset</button>
+            <div class="label">SCENARIO TESTING</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button onclick="apply(600, 30)" style="background: none; border: 1px solid #333; color: #888; padding: 8px; border-radius: 10px; cursor: pointer; font-size: 11px;">GAS LEAK</button>
+                <button onclick="apply(100, 110)" style="background: none; border: 1px solid #333; color: #888; padding: 8px; border-radius: 10px; cursor: pointer; font-size: 11px;">OVERHEAT</button>
+                <button onclick="apply(50, 25)" style="background: none; border: 1px solid var(--success); color: var(--success); padding: 8px; border-radius: 10px; cursor: pointer; font-size: 11px; grid-column: span 2;">RESET SYSTEM</button>
             </div>
         </div>
     </aside>
 
-    <main class="center-stage">
-        <div class="visualizer-ring" id="knob-body">
-            <div class="knob-pointer" id="pointer"></div>
-            <div style="font-weight: 900; font-size: 2rem; color: #fff;" id="knob-text">ON</div>
+    <main class="center-view">
+        <div class="hardware-circle">
+            <div class="knob-cap">
+                <div class="pointer-line" id="pointer"></div>
+                <div style="font-weight: 700; font-size: 1.5rem; letter-spacing: 2px;" id="cap-text">ACTIVE</div>
+            </div>
         </div>
 
-        <div class="status-badge" id="master-status">SYSTEM SECURE</div>
+        <div class="status-badge" id="main-status">SYSTEM SECURE</div>
 
-        <div class="burner-grid">
-            <div class="burner-unit active" id="b1"><span class="flame-icon">🔥</span></div>
-            <div class="burner-unit active" id="b2"><span class="flame-icon">🔥</span></div>
-            <div class="burner-unit active" id="b3"><span class="flame-icon">🔥</span></div>
+        <div class="burner-row">
+            <div class="burner active" id="b1"><span class="flame">🔥</span></div>
+            <div class="burner active" id="b2"><span class="flame">🔥</span></div>
+            <div class="burner active" id="b3"><span class="flame">🔥</span></div>
         </div>
     </main>
 
-    <aside class="glass-panel side-panel">
-        <h3 style="margin-bottom: 25px; letter-spacing: 1px; color: var(--accent)">LOGS</h3>
-        <div class="log-screen" id="log-console">
-            > Initializing IoT Kernel...<br>
-            > Hardware Handshake: OK<br>
-            > Monitoring 24/7...
+    <aside class="side-panel">
+        <div class="label">LIVE TELEMETRY</div>
+        <div class="terminal" id="term">
+            > KERNEL BOOT SUCCESS...<br>
+            > SENSORS STABILIZED...<br>
+            > AWAITING DATA...
         </div>
-        
-        <div style="margin-top: 20px;">
-            <div style="font-size: 12px; color: #888; margin-bottom: 5px;">ACTIVE CONNECTION</div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <div style="width:10px; height:10px; border-radius:50%; background:var(--success);"></div>
-                <span style="font-family: var(--font-mono); font-size: 12px;">HC-05_BT_MODULE</span>
+
+        <div class="card-ui" style="margin-top: auto;">
+            <div class="label">REMOTE STATUS</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:8px; height:8px; border-radius:50%; background:var(--success); box-shadow: 0 0 10px var(--success);"></div>
+                <span style="font-family: 'JetBrains Mono'; font-size: 12px;">APP CONNECTED</span>
             </div>
         </div>
     </aside>
@@ -244,76 +223,64 @@
 </div>
 
 <script>
-    const gasIn = document.getElementById('gas-in');
-    const tempIn = document.getElementById('temp-in');
-    const pointer = document.getElementById('pointer');
-    const knobText = document.getElementById('knob-text');
-    const masterStatus = document.getElementById('master-status');
-    const logConsole = document.getElementById('log-console');
+    const gS = document.getElementById('g-slider');
+    const tS = document.getElementById('t-slider');
+    const ptr = document.getElementById('pointer');
+    const capTxt = document.getElementById('cap-text');
+    const status = document.getElementById('main-status');
+    const term = document.getElementById('term');
 
-    let isSafe = true;
+    let safe = true;
 
-    function addLog(msg, color) {
-        const span = color ? `<span style="color:${color}">` : '<span>';
-        logConsole.innerHTML = `${span}[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + logConsole.innerHTML;
+    function log(msg, err = false) {
+        const color = err ? "var(--danger)" : "var(--success)";
+        term.innerHTML = `<span style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>` + term.innerHTML;
     }
 
-    function setScenario(g, t) {
-        gasIn.value = g;
-        tempIn.value = t;
-        updateLogic();
+    function apply(g, t) {
+        gS.value = g;
+        tS.value = t;
+        run();
     }
 
-    function updateLogic() {
-        const gas = parseInt(gasIn.value);
-        const temp = parseInt(tempIn.value);
+    function run() {
+        const g = parseInt(gS.value);
+        const t = parseInt(tS.value);
 
-        document.getElementById('gas-val').innerText = gas;
-        document.getElementById('temp-val').innerText = temp;
+        document.getElementById('g-num').innerText = g;
+        document.getElementById('t-num').innerText = t;
 
-        // Visual Threshold Logic
-        const isGasDanger = gas > 400;
-        const isTempDanger = temp > 80;
+        const gHz = g > 400;
+        const tHz = t > 80;
 
-        // UI Feedback
-        document.getElementById('gas-badge').innerText = isGasDanger ? 'DANGER' : 'SAFE';
-        document.getElementById('gas-badge').style.color = isGasDanger ? 'var(--danger)' : 'var(--success)';
-        document.getElementById('temp-badge').innerText = isTempDanger ? 'DANGER' : 'SAFE';
-        document.getElementById('temp-badge').style.color = isTempDanger ? 'var(--danger)' : 'var(--success)';
-
-        if (isSafe && (isGasDanger || isTempDanger)) {
-            isSafe = false;
-            // SHUTDOWN ACTION
-            pointer.classList.add('emergency');
-            knobText.innerText = 'OFF';
-            knobText.style.color = 'var(--danger)';
-            masterStatus.innerText = 'EMERGENCY SHUTDOWN';
-            masterStatus.classList.add('hazard');
+        if (safe && (gHz || tHz)) {
+            safe = false;
+            ptr.classList.add('danger');
+            capTxt.innerText = "OFF";
+            capTxt.style.color = "var(--danger)";
+            status.innerText = "CRITICAL HAZARD DETECTED";
+            status.classList.add('red');
+            document.querySelectorAll('.burner').forEach(b => b.classList.remove('active'));
             
-            // Turn off flames
-            document.querySelectorAll('.burner-unit').forEach(b => b.classList.remove('active'));
-            
-            addLog("HAZARD DETECTED: Shutting off stove", "var(--danger)");
-            addLog("Servo Motor Angle: 90°", "var(--accent)");
-            addLog("BT Alert sent to Phone", "var(--warning)");
+            log("! EMERGENCY SHUTDOWN ACTIVATED !", true);
+            log("Servo triggered to -90 degrees", true);
+            log("Mobile notification dispatched", false);
         } 
-        else if (!isSafe && gas < 200 && temp < 45) {
-            isSafe = true;
-            pointer.classList.remove('emergency');
-            knobText.innerText = 'ON';
-            knobText.style.color = '#fff';
-            masterStatus.innerText = 'SYSTEM SECURE';
-            masterStatus.classList.remove('hazard');
-            
-            document.querySelectorAll('.burner-unit').forEach(b => b.classList.add('active'));
-            addLog("Environment Safe. System Reset.", "var(--success)");
+        else if (!safe && g < 200 && t < 45) {
+            safe = true;
+            ptr.classList.remove('danger');
+            capTxt.innerText = "ACTIVE";
+            capTxt.style.color = "#fff";
+            status.innerText = "SYSTEM SECURE";
+            status.classList.remove('red');
+            document.querySelectorAll('.burner').forEach(b => b.classList.add('active'));
+            log("Environment cleared. System restored.");
         }
     }
 
-    gasIn.oninput = updateLogic;
-    tempIn.oninput = updateLogic;
+    gS.oninput = run;
+    tS.oninput = run;
 </script>
 
 </body>
 </html>
-
