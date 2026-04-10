@@ -1,0 +1,17 @@
+// server.js (Requires Express)
+const express = require('express');
+const app = express();
+app.use(express.json());
+
+let deviceStatus = { stoveOn: true, gasLevel: 150 };
+
+// Endpoint for the knob to send data
+app.post('/update-sensors', (req, res) => {
+    const { gas, temp } = req.body;
+    if (gas > 600) {
+        deviceStatus.stoveOn = false; // Emergency shutoff logic
+    }
+    res.json({ status: deviceStatus.stoveOn ? "SAFE" : "EMERGENCY_OFF" });
+});
+
+app.listen(3000, () => console.log("Server running on port 3000"));
