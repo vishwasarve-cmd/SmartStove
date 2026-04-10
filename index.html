@@ -1,243 +1,135 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT Command Center PRO</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
-
-<style>
-:root {
-    --bg: #020617;
-    --panel: rgba(15, 23, 42, 0.8);
-    --accent: #f59e0b;
-    --danger: #ef4444;
-    --success: #10b981;
-    --bt-blue: #3b82f6;
-    --border: rgba(255,255,255,0.08);
-    --font-main: 'Plus Jakarta Sans', sans-serif;
-}
-
-* { box-sizing: border-box; margin:0; padding:0; }
-
-body {
-    font-family: var(--font-main);
-    background: var(--bg);
-    color: #fff;
-}
-
-/* Layout */
-.app-container {
-    display: grid;
-    grid-template-columns: 350px 1fr 320px;
-    gap: 20px;
-    padding: 20px;
-}
-
-/* Panels */
-.side-panel {
-    background: var(--panel);
-    padding: 20px;
-    border-radius: 20px;
-}
-
-/* Slider */
-input[type=range] {
-    width:100%;
-}
-
-/* Knob */
-.center-panel {
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-}
-
-.knob-outer {
-    width:300px;
-    height:300px;
-    border-radius:50%;
-    background:#111;
-    position:relative;
-}
-
-.indicator-needle {
-    width:6px;
-    height:100px;
-    background:var(--accent);
-    position:absolute;
-    top:50px;
-    left:50%;
-    transform-origin: bottom center;
-}
-
-/* Badge */
-.badge {
-    margin-top:20px;
-    padding:10px 20px;
-    border-radius:20px;
-    border:1px solid var(--success);
-}
-
-.alert {
-    border-color:var(--danger);
-    color:var(--danger);
-}
-
-/* Logs */
-.log-box {
-    background:black;
-    padding:10px;
-    height:200px;
-    overflow:auto;
-    font-size:12px;
-    font-family:monospace;
-}
-
-/* Scenario */
-.sc-card {
-    margin:10px 0;
-    padding:10px;
-    background:#222;
-    cursor:pointer;
-}
-</style>
-</head>
-
-<body>
-
-<div class="app-container">
-
-<!-- LEFT -->
-<div class="side-panel">
-
-<div onclick="toggleBT()" style="cursor:pointer;">
-📡 Bluetooth
-</div>
-
-<br>
-
-Gas: <span id="g-num">120</span>
-<input type="range" id="g-slider" min="0" max="1000" value="120">
-
-<br><br>
-
-Temp: <span id="t-num">28</span>
-<input type="range" id="t-slider" min="20" max="150" value="28">
-
-</div>
-
-<!-- CENTER -->
-<div class="center-panel">
-
-<div class="knob-outer">
-<div class="indicator-needle" id="needle"></div>
-</div>
-
-<div class="badge" id="sys-badge">SYSTEM SECURE</div>
-
-</div>
-
-<!-- RIGHT -->
-<div class="side-panel">
-
-<div class="sc-card" onclick="apply(750,32)">Gas Leak</div>
-<div class="sc-card" onclick="apply(120,115)">Overheat</div>
-<div class="sc-card" onclick="apply(45,26)">Reset</div>
-<div class="sc-card" onclick="toggleAuto()">Auto Mode 🤖</div>
-
-<div class="log-box" id="logs"></div>
-
-</div>
-
-</div>
-
 <script>
-
 const gS = document.getElementById('g-slider');
 const tS = document.getElementById('t-slider');
 const needle = document.getElementById('needle');
+const coreStatus = document.getElementById('core-status');
 const sysBadge = document.getElementById('sys-badge');
 const logs = document.getElementById('logs');
+const btMaster = document.getElementById('bt-master');
 
+let isSafe = true;
 let btEnabled = false;
 let autoMode = false;
+let uptime = 0;
+let btDevice = null;
 
-/* LOG */
-function addLog(msg,color="green"){
-    logs.innerHTML = `<div style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>` + logs.innerHTML;
+/* ---------- LOG SYSTEM ---------- */
+function addLog(msg, type = "info") {
+    const colors = {
+        info: "#10b981",
+        warn: "#f59e0b",
+        error: "#ef4444",
+        bt: "#3b82f6"
+    };
+    logs.innerHTML =
+        `<span style="color:${colors[type]}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>` +
+        logs.innerHTML;
 }
 
-/* BLUETOOTH */
-async function toggleBT(){
-    btEnabled = !btEnabled;
-
-    if(btEnabled){
-        if(navigator.bluetooth){
-            addLog("Bluetooth Ready","blue");
-        } else {
-            addLog("Simulation Mode","orange");
+/* ---------- BLUETOOTH (REAL + FALLBACK SIMULATION) ---------- */
+async function toggleBT() {
+    if (!btEnabled) {
+        try {
+            if (navigator.bluetooth) {
+                btDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true
+                });
+                addLog("Bluetooth Connected: " + btDevice.name, "bt");
+            } else {
+                addLog("Web Bluetooth not supported (Simulation Mode)", "warn");
+            }
+            btEnabled = true;
+            btMaster.classList.add('active');
+        } catch (err) {
+            addLog("Bluetooth connection failed", "error");
         }
     } else {
-        addLog("Bluetooth OFF","blue");
+        btEnabled = false;
+        btMaster.classList.remove('active');
+        btDevice = null;
+        addLog("Bluetooth Disconnected", "bt");
     }
 }
 
-/* APPLY */
-function apply(g,t){
-    gS.value=g;
-    tS.value=t;
+/* ---------- SENSOR APPLY ---------- */
+function apply(g, t) {
+    gS.value = g;
+    tS.value = t;
     sync();
 }
 
-/* AUTO */
-function toggleAuto(){
+/* ---------- AUTO SIMULATION ---------- */
+function toggleAuto() {
     autoMode = !autoMode;
-    addLog(autoMode?"Auto ON":"Auto OFF");
+    addLog(autoMode ? "Auto Simulation Enabled" : "Auto Simulation Disabled", "info");
 
-    if(autoMode) simulate();
+    if (autoMode) simulate();
 }
 
-function simulate(){
-    if(!autoMode) return;
+function simulate() {
+    if (!autoMode) return;
 
-    apply(Math.random()*900, Math.random()*120);
-    setTimeout(simulate,2000);
+    let g = Math.floor(Math.random() * 900);
+    let t = Math.floor(Math.random() * 130);
+
+    apply(g, t);
+
+    setTimeout(simulate, 2000);
 }
 
-/* MAIN */
-function sync(){
-    let g=parseInt(gS.value);
-    let t=parseInt(tS.value);
+/* ---------- MAIN LOGIC ---------- */
+function sync() {
+    const g = parseInt(gS.value);
+    const t = parseInt(tS.value);
 
-    document.getElementById('g-num').innerText=g;
-    document.getElementById('t-num').innerText=t;
+    document.getElementById('g-num').innerText = g;
+    document.getElementById('t-num').innerText = t;
 
-    let angle=(g/1000)*180-90;
-    needle.style.transform=`rotate(${angle}deg)`;
+    /* Smooth needle rotation */
+    let angle = (g / 1000) * 180 - 90;
+    needle.style.transform = `rotate(${angle}deg)`;
 
-    if(g>500 || t>90){
-        sysBadge.innerText="CRITICAL";
-        sysBadge.classList.add("alert");
-        addLog("CRITICAL ALERT","red");
+    const warning = g > 300 || t > 60;
+    const critical = g > 500 || t > 90;
+
+    if (critical) {
+        coreStatus.innerText = "CRITICAL";
+        coreStatus.style.color = "var(--danger)";
+        sysBadge.innerText = "EMERGENCY SHUTDOWN";
+        sysBadge.classList.add('alert');
+
+        document.querySelectorAll('.burner-base').forEach(b => b.classList.remove('active'));
+
+        addLog("CRITICAL CONDITION TRIGGERED", "error");
+        if (btEnabled) addLog("Alert sent via Bluetooth", "bt");
     }
-    else if(g>300 || t>60){
-        sysBadge.innerText="WARNING";
-        sysBadge.classList.remove("alert");
-        addLog("Warning","orange");
+    else if (warning) {
+        coreStatus.innerText = "WARNING";
+        coreStatus.style.color = "var(--accent)";
+        sysBadge.innerText = "SYSTEM WARNING";
+        sysBadge.classList.remove('alert');
+
+        addLog("Warning: Threshold approaching", "warn");
     }
-    else{
-        sysBadge.innerText="SAFE";
-        sysBadge.classList.remove("alert");
+    else {
+        coreStatus.innerText = "STABLE";
+        coreStatus.style.color = "#fff";
+        sysBadge.innerText = "SYSTEM SECURE";
+        sysBadge.classList.remove('alert');
+
+        document.querySelectorAll('.burner-base').forEach(b => b.classList.add('active'));
     }
 }
 
-gS.oninput=sync;
-tS.oninput=sync;
+/* ---------- UPTIME COUNTER ---------- */
+setInterval(() => {
+    uptime++;
+    if (uptime % 5 === 0) {
+        addLog("System Uptime: " + uptime + "s", "info");
+    }
+}, 1000);
 
+/* ---------- EVENTS ---------- */
+gS.oninput = sync;
+tS.oninput = sync;
 </script>
-
-</body>
-</html>
